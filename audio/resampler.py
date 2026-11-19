@@ -1,42 +1,65 @@
-"""音频重采样：相位、下混与时钟：待实现的核心模块。"""
+"""音频重采样：相位、下混与时钟：核心模块实现。"""
+
+import math
+
+# 5.1 声道顺序：FL, FR, C, LFE, SL, SR
+_SURROUND_GAIN = 0.707  # 中置/环绕混入左右声道的增益，避免重复计入导致过载
+
+# 已知的声道布局（单声道、立体声、5.1）
+_KNOWN_LAYOUTS = (1, 2, 6)
 
 
 def phase_increment(input_rate, output_rate):
     """相位增量等于输入/输出采样率比。"""
-    raise NotImplementedError
+    return input_rate / output_rate
+
 
 def downmix_51(channels):
     """5.1 下混到立体声，中置只计一次。"""
-    raise NotImplementedError
+    fl, fr, c, _lfe, sl, sr = channels
+    left = fl + _SURROUND_GAIN * c + _SURROUND_GAIN * sl
+    right = fr + _SURROUND_GAIN * c + _SURROUND_GAIN * sr
+    return [left, right]
+
 
 def align_block(frames, block):
     """按块大小对齐输入帧数。"""
-    raise NotImplementedError
+    return frames - (frames % block)
+
 
 def output_capacity(input_frames, ratio):
     """按比例预分配输出缓冲并留一个余量。"""
-    raise NotImplementedError
+    return math.ceil(input_frames * ratio) + 1
+
 
 def lowpass_cutoff(input_rate, output_rate):
     """低通截止频率随采样率自适应。"""
-    raise NotImplementedError
+    return min(input_rate, output_rate) * 0.45
+
 
 def clock_drift(device_time, host_time):
     """计算设备时钟相对主机时钟的漂移。"""
-    raise NotImplementedError
+    return device_time - host_time
+
 
 def carry_state(previous, block):
     """跨块保留上一块尾部状态。"""
-    raise NotImplementedError
+    n = len(previous)
+    if n == 0:
+        return []
+    return list(block[-n:])
+
 
 def clamp_pcm(value):
     """浮点转 16 bit 前钳制。"""
-    raise NotImplementedError
+    return max(-1.0, min(1.0, value))
+
 
 def fallback_layout(channels):
     """未知声道布局回退到立体声。"""
-    raise NotImplementedError
+    return channels if channels in _KNOWN_LAYOUTS else 2
+
 
 def reset_history(history):
     """暂停恢复时重置滤波历史。"""
-    raise NotImplementedError
+    return []
